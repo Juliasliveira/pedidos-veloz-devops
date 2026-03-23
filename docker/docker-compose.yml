@@ -1,0 +1,104 @@
+﻿version: "3.9"
+
+networks:
+  veloz-net:
+    driver: bridge
+
+volumes:
+  postgres-data:
+
+services:
+  pedidos:
+    build:
+      context: ../services/pedidos
+      dockerfile: Dockerfile
+    image: pedidos-veloz/pedidos:1.0.0
+    container_name: pedidos-service
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_USER=admin
+      - DB_PASSWORD=admin
+      - DB_NAME=pedidos
+      - ESTOQUE_URL=http://estoque:3001
+      - PAGAMENTOS_URL=http://pagamentos:3002
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - veloz-net
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  estoque:
+    build:
+      context: ../services/estoque
+      dockerfile: Dockerfile
+    image: pedidos-veloz/estoque:1.0.0
+    container_name: estoque-service
+    ports:
+      - "3001:3001"
+    environment:
+      - NODE_ENV=development
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_USER=admin
+      - DB_PASSWORD=admin
+      - DB_NAME=pedidos
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - veloz-net
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  pagamentos:
+    build:
+      context: ../services/pagamentos
+      dockerfile: Dockerfile
+    image: pedidos-veloz/pagamentos:1.0.0
+    container_name: pagamentos-service
+    ports:
+      - "3002:3002"
+    environment:
+      - NODE_ENV=development
+    networks:
+      - veloz-net
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3002/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  db:
+    image: postgres:15-alpine
+    container_name: postgres-db
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin
+      POSTGRES_DB: pedidos
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - veloz-net
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin -d pedidos"]
+      interval: 10s
+      timeout: 5s
+      retries: 5

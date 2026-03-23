@@ -1,0 +1,52 @@
+﻿apiVersion: v1
+kind: Service
+metadata:
+  name: pedidos-service
+  namespace: default
+spec:
+  selector:
+    app: pedidos
+  ports:
+    - port: 3000
+      targetPort: 3000
+  type: ClusterIP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: estoque-service
+  namespace: default
+spec:
+  selector:
+    app: estoque
+  ports:
+    - port: 3001
+      targetPort: 3001
+  type: ClusterIP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: pagamentos-service
+  namespace: default
+spec:
+  selector:
+    app: pagamentos
+  ports:
+    - port: 3002
+      targetPort: 3002
+  type: ClusterIP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: pedidos-nodeport
+  namespace: default
+spec:
+  selector:
+    app: pedidos
+  type: NodePort
+  ports:
+    - port: 3000
+      targetPort: 3000
+      nodePort: 30007
